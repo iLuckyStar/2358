@@ -1,6 +1,8 @@
 package com.project.ti2358.ui.portfolio
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.view.View.*
 import android.widget.SeekBar
@@ -107,6 +109,30 @@ class PortfolioPositionFragment : Fragment(R.layout.fragment_portfolio_position)
                 true
             }
 
+            percentLimitEditText.addTextChangedListener(object : TextWatcher {
+                var cursorEnd: Int = 0
+                var lastValue: String = ""
+
+                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+                    cursorEnd = percentLimitEditText.selectionEnd
+                }
+
+                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable) {
+                    val value = try {
+                        (s.toString()).toDouble()
+                    } catch (e: Exception) {
+                        1.0
+                    }
+                    stockPurchase.percentProfitSellFrom = value
+                    percentLimitEditText.removeTextChangedListener(this)
+                    updatePrice()
+                    val newCursorPosition: Int = s.length - Math.abs(cursorEnd - lastValue.length)
+                    lastValue = percentLimitEditText.text.toString()
+                    percentLimitEditText.setSelection(Math.min(Math.max(0, newCursorPosition), s.length))
+                    percentLimitEditText.addTextChangedListener(this)
+                }
+            })
             percentLimitEditText.setOnEditorActionListener { v, actionId, event ->
                 val value = try {
                     (v.text.toString()).toDouble()
