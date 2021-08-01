@@ -51,8 +51,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         /////////// ALOR
 
-        val alorQoutesKey: String = getString(R.string.setting_key_alor_quotes)
-        val alorQoutesPreference: SwitchPreferenceCompat? = findPreference(alorQoutesKey)
+        val alorQuotesKey: String = getString(R.string.setting_key_alor_quotes)
+        val alorQuotesPreference: SwitchPreferenceCompat? = findPreference(alorQuotesKey)
 
         val alorOrderbookKey: String = getString(R.string.setting_key_alor_orderbook)
         val alorOrderbookPreference: SwitchPreferenceCompat? = findPreference(alorOrderbookKey)
@@ -62,7 +62,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        alorQoutesPreference?.onPreferenceChangeListener = alorListener
+        alorQuotesPreference?.onPreferenceChangeListener = alorListener
         alorOrderbookPreference?.onPreferenceChangeListener = alorListener
 
         val alorTokenKey: String = getString(R.string.setting_key_token_market_alor)

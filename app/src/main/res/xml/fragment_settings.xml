@@ -42,7 +42,7 @@
 
         <SwitchPreferenceCompat
             app:key="@string/setting_key_alor_quotes"
-            app:title="@string/alor_qoutes_title"
+            app:title="@string/alor_quotes_title"
             app:defaultValue="false" />
 
         <SwitchPreferenceCompat

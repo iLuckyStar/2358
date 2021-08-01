@@ -107,6 +107,16 @@ class PortfolioPositionFragment : Fragment(R.layout.fragment_portfolio_position)
                 true
             }
 
+            percentLimitEditText.setOnEditorActionListener { v, actionId, event ->
+                val value = try {
+                    (v.text.toString()).toDouble()
+                } catch (e: Exception) {
+                    1.0
+                }
+                stockPurchase.percentProfitSellFrom = value
+                updatePrice()
+                true
+            }
             lotsBar.max = stockPurchase.lots
             lotsBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
 
