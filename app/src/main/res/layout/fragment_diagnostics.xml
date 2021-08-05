@@ -5,23 +5,63 @@
     <TextView
         android:id="@+id/text_info_view"
         android:layout_width="fill_parent"
-        android:layout_height="500dp"
+        android:layout_height="470dp"
         android:layout_alignParentTop="true"
         android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginBottom="50dp"
-        android:layout_marginTop="10dp"
         android:text="Запуск таймера на покупку: \nВремя МСК: 2358: \nБумаг: 5\nСумма: ~1000$"
         android:textSize="16sp"
         android:textStyle="bold" />
 
-    <Button android:layout_width="fill_parent"
-        android:layout_height="70dp"
+    <Button
         android:id="@+id/updateButton"
+        android:layout_width="fill_parent"
+        android:layout_height="70dp"
+        android:layout_alignParentBottom="true"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:text="@string/update"
-        android:textSize="20dp"
-        android:layout_alignParentBottom="true" />
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/updateButton"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="10dp"
+        android:text="@string/save"
+        android:textSize="15sp" />
+
+    <Space
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/updateButton"
+
+        android:layout_alignBaseline="@id/saveButton"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:text="@string/menu_settings"
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/loadButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/updateButton"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:text="@string/load"
+        android:textSize="15sp" />
 
 </RelativeLayout>
