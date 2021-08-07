@@ -1,18 +1,18 @@
 package com.project.ti2358.ui.diagnostics
 
-import android.Manifest.permission.READ_EXTERNAL_STORAGE
-import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.app.Activity.RESULT_OK
+import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider.getUriForFile
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager.getDefaultSharedPreferences
-import com.project.ti2358.MainActivity
+import com.project.ti2358.BuildConfig
 import com.project.ti2358.R
-import com.project.ti2358.TheApplication
+import com.project.ti2358.TheApplication.Companion.application
 import com.project.ti2358.data.alor.service.StreamingAlorService
 import com.project.ti2358.data.manager.StockManager
 import com.project.ti2358.data.manager.TinkoffPortfolioManager
@@ -28,6 +28,8 @@ import java.io.*
 @KoinApiExtension
 
 class DiagnosticsFragment : Fragment(R.layout.fragment_diagnostics) {
+
+
     val tinkoffPortfolioManager: TinkoffPortfolioManager by inject()
     val stockManager: StockManager by inject()
     val streamingTinkoffService: StreamingTinkoffService by inject()
@@ -35,15 +37,38 @@ class DiagnosticsFragment : Fragment(R.layout.fragment_diagnostics) {
     val streamingPantiniService: StreamingPantiniService by inject()
 
     private var fragmentDiagnosticsBinding: FragmentDiagnosticsBinding? = null
-    private var reqPermissionStatus: Boolean = false
+    private val SAVE_REQUEST_CODE = 666
+    private val PICKFILE_RESULT_CODE = 777
 
     override fun onDestroy() {
         fragmentDiagnosticsBinding = null
         super.onDestroy()
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
+
+        if (resultCode == RESULT_OK) if (resultData != null) {
+            var currentUri: Uri? = null
+            if (requestCode == SAVE_REQUEST_CODE) {
+                resultData.let {
+                    //Заглушка, не всегда прилетает ответ, если обрабатывается не средствами системы
+                }
+            } else if (requestCode == PICKFILE_RESULT_CODE) {
+                resultData.let {
+                    currentUri = it.data
+                    try {
+                        loadSharedPreferencesFromFile(currentUri!!)
+                    } catch (e: IOException) {
+                        Utils.showToastAlert("Что-то пошло не так")
+                    }
+                }
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val pathToFile = getPathToFile()
         val binding = FragmentDiagnosticsBinding.bind(view)
         fragmentDiagnosticsBinding = binding
 
@@ -51,16 +76,11 @@ class DiagnosticsFragment : Fragment(R.layout.fragment_diagnostics) {
             updateData()
         }
         binding.saveButton.setOnClickListener {
-            checkPermission(WRITE_EXTERNAL_STORAGE, 2358)
-            if (reqPermissionStatus == true) {
-                saveSharedPreferencesToFile(getPathToFile())
-            }
+            saveSharedPreferencesToFile(pathToFile)
+            saveFile(it)
         }
         binding.loadButton.setOnClickListener {
-            checkPermission(READ_EXTERNAL_STORAGE, 2358)
-            if (reqPermissionStatus == true) {
-                loadSharedPreferencesFromFile(getPathToFile())
-            }
+            openFile(it)
         }
         updateData()
     }
@@ -113,27 +133,26 @@ class DiagnosticsFragment : Fragment(R.layout.fragment_diagnostics) {
                     "pantini авторизация: $pantiniAuthStatus\n\n"
     }
 
-    // Функция для проверки и запроса разрешения.
-    private fun checkPermission(permission: String, requestCode: Int) {
-        val appSpecificExternalDir = File(requireContext().getExternalFilesDir(null), "oostap2358.xml")
-        if (ContextCompat.checkSelfPermission(activity as MainActivity, permission) == PackageManager.PERMISSION_DENIED) {
-            // Запрашиваем разрешения
-            ActivityCompat.requestPermissions(activity as MainActivity, arrayOf(permission), requestCode)
-        } else {
-            //Права получены, установка статуса
-            reqPermissionStatus = true
-            //Utils.showToastAlert("Разрешение предоставлено")
+    private fun saveFile(view: View) {
+        val file = File(requireContext().getExternalFilesDir(null), "oostap2358.xml")
+        val outputUri = getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.putExtra(Intent.EXTRA_TEXT, "Настройки программы oost.app")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            intent.putExtra(Intent.EXTRA_CHOOSER_TARGETS, "org.telegram.messenger")
         }
+        intent.putExtra(Intent.EXTRA_STREAM, outputUri)
+        intent.type = "text/plain"
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        startActivityForResult(intent, SAVE_REQUEST_CODE)
     }
 
-    private fun getPathToFile(): File {
-        /*Сохраняется в папку приложения по пути: (/storage/emulated/0/Android/data/com.project.ti2358/files/), потому-что начиная с 10-11 ведра, доступ на запись в произвольное место - запрещена (Scoped Storage). Есть способы обхода, но тогда приложение нельзя разместить в GPlay =(
-        П.С. после удаления приложения, папка стирается со всем содержимым.*/
-        //костыль для 10-11 ведра
-        val dir = "${context?.getExternalFilesDir(null)}/"
-        // Создаем папку.
-        if (File(dir).mkdirs()) return File(dir, "oostap2358.xml")
-        return File(dir, "oostap2358.xml")
+    private fun openFile(view: View) {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.putExtra("return-data", true)
+        intent.type = "text/xml"
+        startActivityForResult(intent, PICKFILE_RESULT_CODE)
     }
 
     private fun saveSharedPreferencesToFile(dst: File): Boolean {
@@ -141,10 +160,9 @@ class DiagnosticsFragment : Fragment(R.layout.fragment_diagnostics) {
         var output: ObjectOutputStream? = null
         try {
             output = ObjectOutputStream(FileOutputStream(dst))
-            val pref = getDefaultSharedPreferences(TheApplication.application.applicationContext)
+            val pref = getDefaultSharedPreferences(application.applicationContext)
             output.writeObject(pref.all)
             res = true
-            Utils.showToastAlert("Настройки сохранены")
         } catch (e: FileNotFoundException) {
             Utils.showToastAlert("Отсутствуют права на запись")
             e.printStackTrace()
@@ -164,12 +182,13 @@ class DiagnosticsFragment : Fragment(R.layout.fragment_diagnostics) {
         return res
     }
 
-    private fun loadSharedPreferencesFromFile(src: File): Boolean {
+    private fun loadSharedPreferencesFromFile(uri: Uri): Boolean {
+        val inputStream = activity?.contentResolver?.openInputStream(uri)
         var res = false
         var input: ObjectInputStream? = null
         try {
-            input = ObjectInputStream(FileInputStream(src))
-            val prefEdit: SharedPreferences.Editor = getDefaultSharedPreferences(TheApplication.application.applicationContext).edit()
+            input = ObjectInputStream(inputStream)
+            val prefEdit: SharedPreferences.Editor = getDefaultSharedPreferences(application.applicationContext).edit()
             prefEdit.clear()
             val entries = input.readObject() as Map<String, *>
             for ((key, value) in entries) {
@@ -209,5 +228,14 @@ class DiagnosticsFragment : Fragment(R.layout.fragment_diagnostics) {
             }
         }
         return res
+    }
+
+    private fun getPathToFile(): File {
+        /*Сохраняется в папку приложения по пути: (/storage/emulated/0/Android/data/com.project.ti2358/files/), потому-что начиная с 10-11 ведра, доступ на запись в произвольное место - запрещена (Scoped Storage). Есть способы обхода, но тогда приложение нельзя разместить в GPlay =(
+        П.С. после удаления приложения, папка стирается со всем содержимым.*/
+        val dir = "${context?.getExternalFilesDir(null)}/"
+        // Создаем папку.
+        if (File(dir).mkdirs()) return File(dir, "oostap2358.xml")
+        return File(dir, "oostap2358.xml")
     }
 }
